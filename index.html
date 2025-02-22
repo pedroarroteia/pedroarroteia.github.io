@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Model Comparison</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+  <style>
+    * { 
+      box-sizing: border-box; 
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f4f6fc;
+      color: #333;
+      text-align: center;
+      padding: 40px;
+    }
+    h1 {
+      font-size: 2.8em;
+      margin-bottom: 40px;
+      color: #2c3e50;
+      font-weight: 600;
+    }
+    /* Image Selector and Preview */
+    #imagePreviewContainer {
+      margin-bottom: 40px;
+      position: relative;
+    }
+    #imageInput {
+      margin-bottom: 20px; /* Separando o seletor de imagens */
+    }
+    #imagePreview {
+      max-width: 250px;  /* Tamanho ajustado para a imagem de pré-visualização */
+      width: 100%; /* Para tornar responsivo */
+      height: auto; /* Mantém a proporção */
+      border: 1px solid #e1e5ea;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      display: block;
+      margin: 0 auto;
+      transition: transform 0.5s ease; /* Aumento no tempo da transição */
+    }
+    #imagePreview:hover {
+      transform: scale(1.3); /* Zoom mais suave */
+    }
+    #loader {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2.5em;
+      color: #3498db;
+      display: none;
+    }
+    /* Button */
+    button {
+      background-color: #3498db;
+      border: none;
+      border-radius: 5px;
+      padding: 12px 24px;
+      color: #fff;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.3s ease;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    button:hover {
+      background-color: #2980b9;
+      transform: translateY(-2px);
+    }
+    /* YOLO Results: Always visible containers */
+    #yoloContainer {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 40px;
+      flex-wrap: wrap;
+      visibility: hidden; /* Hide initially */
+      opacity: 0;
+      transition: visibility 0s, opacity 0.5s ease;
+    }
+    .yolo-box {
+      width: 45%;
+      text-align: center; /* To center the image within the box */
+    }
+    .yolo-box h2 {
+      margin-bottom: 15px;
+      color: #3498db;
+      font-size: 1.3em;
+      font-weight: 600;
+    }
+    .yolo-box img {
+      border-radius: 8px;
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+      transition: transform 0.5s ease; /* Mais suave */
+    }
+    /* Hover effect for zoom */
+    .yolo-box img:hover, #imagePreview:hover {
+      transform: scale(1.3); /* Zoom mais suave */
+    }
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      #yoloContainer {
+        flex-direction: column;
+        gap: 20px;
+      }
+      .yolo-box {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Model Comparison</h1>
+
+  <!-- Image Selector and Preview -->
+  <div>
+    <input type="file" id="imageInput" accept="image/*" onchange="previewImage()" />
+    <div id="imagePreviewContainer">
+      <p>Preview:</p>
+      <div class="image-container">
+        <img id="imagePreview" alt="Image Preview" src="" />
+        <div id="loader"><i class="fas fa-spinner fa-spin"></i></div>
+      </div>
+    </div>
+    <button onclick="uploadImages()"> Evaluate </button>
+  </div>
+
+  <!-- YOLO Results: Always visible containers -->
+  <div id="yoloContainer">
+    <div class="yolo-box">
+      <h2>YOLO 10 normal</h2>
+      <img id="yolo10Image" alt="YOLO 10 Image" src="" />
+    </div>
+    <div class="yolo-box">
+      <h2>YOLO 10</h2>
+      <img id="yolo7Image" alt="YOLO 7 Image" src="" />
+    </div>
+  </div>
+
+  <script>
+    function previewImage() {
+      const fileInput = document.getElementById("imageInput");
+      const imagePreview = document.getElementById("imagePreview");
+      const loader = document.getElementById("loader");
+      if (fileInput.files.length > 0) {
+        loader.style.display = "block";
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          imagePreview.src = event.target.result;
+          imagePreview.style.display = "block";
+          loader.style.display = "none";
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      }
+    }
+    
+    async function uploadImages() {
+      const fileInput = document.getElementById("imageInput");
+      const loader = document.getElementById("loader");
+      const yoloContainer = document.getElementById("yoloContainer");
+      if (!fileInput.files.length) {
+        alert("Please select an image for comparison!");
+        return;
+      }
+      const formData = new FormData();
+      formData.append("image", fileInput.files[0]);
+      loader.style.display = "block";
+      try {
+        const response = await fetch("http://localhost:8080/compare", {
+          method: "POST",
+          body: formData
+        });
+        if (!response.ok) throw new Error("Failed to process images");
+        const data = await response.json();
+        console.log("Response from API:", data);
+        
+        // Garantir que as imagens da API sejam exibidas corretamente
+        const yolo10Image = document.getElementById("yolo10Image");
+        const yolo7Image = document.getElementById("yolo7Image");
+        
+        yolo10Image.src = data.imageA; // A imagem do YOLO 10
+        yolo7Image.src = data.imageB;  // A imagem do YOLO 7
+
+        // Exibir as imagens com os tamanhos originais
+        yolo10Image.style.display = "block";
+        yolo7Image.style.display = "block";
+
+        // Exibir e centralizar o container das imagens
+        yoloContainer.style.visibility = "visible";
+        yoloContainer.style.opacity = "1";
+
+        // Esperar as imagens carregarem antes de centralizar
+        yolo10Image.onload = function() {
+          yoloContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+        
+        loader.style.display = "none";
+      } catch (error) {
+        console.error(error);
+        loader.style.display = "none";
+      }
+    }
+  </script>
+</body>
+</html>
