@@ -175,7 +175,7 @@
       formData.append("image", fileInput.files[0]);
       loader.style.display = "block";
       try {
-        const response = await fetch("https://thesisapi.onrender.com:8080/compare", {
+        const response = await fetch("https://thesisapi.onrender.com:10000/compare", {
           method: "POST",
           body: formData
         });
