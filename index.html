@@ -175,7 +175,7 @@
       formData.append("image", fileInput.files[0]);
       loader.style.display = "block";
       try {
-        const response = await fetch("http://localhost:10000/", {
+        const response = await fetch("localhost:10000/", {
           method: "POST",
           body: formData
         });
